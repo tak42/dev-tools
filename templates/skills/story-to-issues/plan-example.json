@@ -1,0 +1,33 @@
+{
+  "parent": "S001",
+  "issues": [
+    {
+      "key": "T1",
+      "title": "パスワード再設定トークンの保存",
+      "priority": "P1",
+      "background": "再設定用の一時トークンを発行・保存し、30 分で失効させる。",
+      "context": ["src/models/user.ts", "docs/spec/auth.md#3.2"],
+      "tasks": ["トークン用テーブルとモデルを追加", "有効期限 30 分の判定を実装", "単体テストを追加"],
+      "acceptance": "npm test -- reset-token"
+    },
+    {
+      "key": "T2",
+      "title": "再設定メール送信 API",
+      "priority": "P1",
+      "depends_on": ["T1"],
+      "context": ["src/api/auth.ts", "src/mail/index.ts", "docs/spec/auth.md#3.2"],
+      "tasks": ["POST /password/reset を追加", "未登録メールでも同じレスポンスを返す", "API テストを追加"],
+      "acceptance": "npm test -- reset-api"
+    },
+    {
+      "key": "T3",
+      "title": "パスワード再設定画面",
+      "priority": "P2",
+      "depends_on": ["T2"],
+      "labels": ["ui"],
+      "context": ["src/pages/login.tsx", "docs/spec/auth.md#3.2"],
+      "tasks": ["再設定画面を追加", "ログイン画面からリンク", "E2E テストを追加"],
+      "acceptance": "npm run e2e -- reset"
+    }
+  ]
+}

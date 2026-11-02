@@ -6,7 +6,8 @@
 // 何度実行しても同じ結果になる（冪等）。更新時も同じコマンドを再実行する。
 //   - scripts/issues.mjs                 : 最新版で上書き
 //   - .github/copilot-instructions.md    : マーカー間のブロックだけを差し替え（他の記述は保持）
-//   - issues/open, issues/closed         : なければ作成
+//   - .github/skills/<dev-tools の Skill> : 最新版で上書き（dev-tools にない Skill には触れない）
+//   - issues/open, closed, stories       : なければ作成
 //   - issues/INDEX.md                    : 再生成
 //   - package.json                       : あれば "issue" スクリプトを追加（既存なら変更しない）
 
@@ -76,9 +77,35 @@ const eol = (s) => s.replace(/\r\n/g, "\n");
   if (next !== cur) write(dest, next);
 }
 
-// 3. issues ディレクトリ
+// 3. Skills（templates/skills/<name>/ → .github/skills/<name>/）
+{
+  const srcRoot = path.join(HERE, "templates/skills");
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true })
+    .flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
+  for (const skill of fs.readdirSync(srcRoot, { withFileTypes: true }).filter((e) => e.isDirectory()).map((e) => e.name)) {
+    const srcDir = path.join(srcRoot, skill);
+    const destDir = path.join(target, ".github/skills", skill);
+    const srcFiles = walk(srcDir).map((f) => path.relative(srcDir, f));
+    let changed = 0;
+    for (const f of srcFiles) {
+      const src = fs.readFileSync(path.join(srcDir, f), "utf8");
+      const dest = path.join(destDir, f);
+      const cur = fs.existsSync(dest) ? fs.readFileSync(dest, "utf8") : null;
+      if (cur === null || eol(cur) !== eol(src)) { write(dest, src); changed++; }
+    }
+    // dev-tools 側で削除されたファイルを片付ける
+    if (fs.existsSync(destDir)) {
+      for (const f of walk(destDir).map((p) => path.relative(destDir, p))) {
+        if (!srcFiles.includes(f)) { if (!dry) fs.unlinkSync(path.join(destDir, f)); changed++; }
+      }
+    }
+    log(`${changed ? (fs.existsSync(destDir) || dry ? "同期  " : "作成  ") : "変更なし"} ${rel(destDir)}/${changed ? `（${changed} ファイル）` : ""}`);
+  }
+}
+
+// 4. issues ディレクトリ
 const issuesDir = path.join(target, "issues");
-for (const d of ["open", "closed"]) {
+for (const d of ["open", "closed", "stories"]) {
   const p = path.join(issuesDir, d);
   if (!fs.existsSync(p)) {
     log(`作成   ${rel(p)}/`);
@@ -86,7 +113,7 @@ for (const d of ["open", "closed"]) {
   }
 }
 
-// 4. package.json に "issue" スクリプト
+// 5. package.json に "issue" スクリプト
 {
   const pkg = path.join(target, "package.json");
   if (fs.existsSync(pkg)) {
@@ -102,7 +129,7 @@ for (const d of ["open", "closed"]) {
   }
 }
 
-// 5. 旧形式の検出 と INDEX 生成
+// 6. 旧形式の検出 と INDEX 生成
 const legacy = fs.existsSync(issuesDir) ? fs.readdirSync(issuesDir).filter((f) => /^\d+.*\.md$/.test(f)) : [];
 if (!dry) {
   execFileSync(process.execPath, [path.join(target, "scripts/issues.mjs"), "index"], { cwd: target, stdio: "ignore" });
