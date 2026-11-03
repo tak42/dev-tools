@@ -11,6 +11,7 @@ dev-tools/
 ├── tools/
 │   └── issues/issues.mjs                     issue 管理 CLI（配布先では scripts/issues.mjs）
 └── templates/
+    ├── DEV-TOOLS.md                          配布先のルート直下に置く使い方ドキュメント
     ├── copilot-instructions.issues.md        常時読み込まれる最小限のルール（数行）
     └── skills/
         ├── story-to-issues/                  ストーリー → issue 分解（人間が /story-to-issues で呼ぶ）
@@ -43,6 +44,7 @@ node dev-tools/install.mjs ../my-project             # 実行
 
 | 対象リポジトリのファイル | インストーラの動作 |
 |---|---|
+| `DEV-TOOLS.md`（ルート直下） | 使い方ドキュメント。最新版で上書きし、導入した dev-tools のバージョン（コミット）を記録する。既存の `README.md` には触れない |
 | `scripts/issues.mjs` | 最新版で上書き（配布物なので直接編集しない） |
 | `.github/copilot-instructions.md` | `<!-- dev-tools:issues:start/end -->` の間だけを差し替え。それ以外の記述はそのまま残す |
 | `.github/skills/story-to-issues/` 等 | dev-tools の Skill を最新版に同期。プロジェクト独自の Skill には触れない |

@@ -4,6 +4,7 @@
 //   node install.mjs <対象リポジトリのパス> [--dry-run]
 //
 // 何度実行しても同じ結果になる（冪等）。更新時も同じコマンドを再実行する。
+//   - DEV-TOOLS.md                       : 使い方ドキュメント。最新版で上書き（既存の README.md には触れない）
 //   - scripts/issues.mjs                 : 最新版で上書き
 //   - .github/copilot-instructions.md    : マーカー間のブロックだけを差し替え（他の記述は保持）
 //   - .github/skills/<dev-tools の Skill> : 最新版で上書き（dev-tools にない Skill には触れない）
@@ -129,7 +130,22 @@ for (const d of ["open", "closed", "stories"]) {
   }
 }
 
-// 6. 旧形式の検出 と INDEX 生成
+// 6. DEV-TOOLS.md（ルート直下。README.md とは別ファイル）
+{
+  let version = "unknown";
+  try {
+    version = execFileSync("git", ["-C", HERE, "log", "-1", "--format=%h (%cs)"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || version;
+  } catch {}
+  const src = fs.readFileSync(path.join(HERE, "templates/DEV-TOOLS.md"), "utf8").replace("{{VERSION}}", version);
+  const dest = path.join(target, "DEV-TOOLS.md");
+  const cur = fs.existsSync(dest) ? fs.readFileSync(dest, "utf8") : null;
+  if (cur === null) log(`作成   ${rel(dest)}`);
+  else if (eol(cur) !== eol(src)) log(`更新   ${rel(dest)}`);
+  else log(`変更なし ${rel(dest)}`);
+  if (cur === null || eol(cur) !== eol(src)) write(dest, src);
+}
+
+// 7. 旧形式の検出 と INDEX 生成
 const legacy = fs.existsSync(issuesDir) ? fs.readdirSync(issuesDir).filter((f) => /^\d+.*\.md$/.test(f)) : [];
 if (!dry) {
   execFileSync(process.execPath, [path.join(target, "scripts/issues.mjs"), "index"], { cwd: target, stdio: "ignore" });
@@ -142,4 +158,5 @@ if (legacy.length) {
   console.log("  node scripts/issues.mjs migrate --dry-run");
   console.log("  node scripts/issues.mjs migrate");
 }
-console.log("\n差分は対象リポジトリで git status / git diff で確認してください。");
+console.log("\n使い方は対象リポジトリの DEV-TOOLS.md を参照してください。");
+console.log("差分は対象リポジトリで git status / git diff で確認してください。");
